@@ -19,10 +19,17 @@ public class SocketTask implements Runnable {
 	public void run() {
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(socket_.getInputStream()));
-			reader.readLine();
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket_.getOutputStream()));
-			writer.write("Hello");
-			writer.newLine();
+			String line;
+			while ((line = reader.readLine()) != null) {
+				if(line.isEmpty()) {
+					break;
+				}
+				System.out.println(line);
+				writer.write(line);
+				writer.newLine();
+				writer.flush();
+			}
 			writer.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
