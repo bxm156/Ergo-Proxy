@@ -20,16 +20,23 @@ public class SocketTask implements Runnable {
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(socket_.getInputStream()));
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket_.getOutputStream()));
+			
+			StringBuffer dataBuffer = new StringBuffer();
+			
 			String line;
 			while ((line = reader.readLine()) != null) {
+				//HTTP Response are terminated by a blank line
 				if(line.isEmpty()) {
 					break;
 				}
-				System.out.println(line);
-				writer.write(line);
-				writer.newLine();
-				writer.flush();
+				dataBuffer.append(line);
 			}
+			HttpRequest request = HttpParser.parse(dataBuffer.toString());
+			writer.write("GET: " + request.getGet());
+			writer.newLine();
+			writer.write("Ver: " +request.getVersion());
+			writer.newLine();
+			writer.write("Host: " +request.getHost());
 			writer.flush();
 		} catch (IOException e) {
 			e.printStackTrace();

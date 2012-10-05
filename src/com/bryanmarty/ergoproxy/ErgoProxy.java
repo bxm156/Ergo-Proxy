@@ -23,6 +23,7 @@ public class ErgoProxy {
 		} catch (InterruptedException e) {
 
 		}
+		workerPool.shutdownNow();
 	}
 
 	public static void run() throws InterruptedException {
