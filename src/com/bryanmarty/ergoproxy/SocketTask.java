@@ -17,6 +17,9 @@ public class SocketTask implements Runnable {
 
 	@Override
 	public void run() {
+		if(socket_ == null) {
+			return;
+		}
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(socket_.getInputStream()));
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket_.getOutputStream()));
