@@ -32,7 +32,7 @@ public class ThreadPoolServer {
 					try {
 						myServer_ = new ServerSocket(port_);
 					} catch (IOException io) {
-						io.printStackTrace();
+						System.out.println("Failed to open socket: " + io.getMessage());
 						return;
 					}
 					System.out.println("Listening on port: " + port_);
@@ -63,7 +63,9 @@ public class ThreadPoolServer {
 		System.out.println("Stopping Server Thread..");
 		try {
 			serverHandler_.interrupt();
-			myServer_.close();
+			if(myServer_ != null) {
+				myServer_.close();
+			}
 			serverHandler_.join();
 			workerPool_.shutdown();
 		} catch (InterruptedException e) {

@@ -2,6 +2,7 @@ package com.bryanmarty.ergoproxy;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -9,6 +10,8 @@ import java.net.Socket;
 
 public class SocketTask implements Runnable {
 
+	private static final String NEW_LINE = "\r\n";
+	private static final DataCache DATA_CACHE = DataCache.getInstance();
 	private final Socket socket_;
 	
 	public SocketTask(Socket clientSocket) {
@@ -25,7 +28,6 @@ public class SocketTask implements Runnable {
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket_.getOutputStream()));
 			
 			StringBuffer dataBuffer = new StringBuffer();
-			
 			String line;
 			while ((line = reader.readLine()) != null) {
 				//HTTP Response are terminated by a blank line
@@ -33,14 +35,56 @@ public class SocketTask implements Runnable {
 					break;
 				}
 				dataBuffer.append(line);
+				dataBuffer.append(NEW_LINE);
 			}
-			HttpRequest request = HttpParser.parse(dataBuffer.toString());
-			writer.write("GET: " + request.getGet());
-			writer.newLine();
-			writer.write("Ver: " +request.getVersion());
-			writer.newLine();
-			writer.write("Host: " +request.getHost());
-			writer.flush();
+			//reader.close();
+			socket_.shutdownInput();
+			
+			String data = dataBuffer.toString();
+			//System.out.println(data);
+			HttpRequest request = HttpParser.parse(data);
+			/*
+			//First look for the file
+			File f = null;
+			if( (f = DATA_CACHE.retrieve(request.getConnection(), request.getGet())) != null) {
+				//We have a file in the cache to return
+			} else {
+				//We must request the file from the server
+				//Socket sRequest = new So
+			}*/
+			
+			Socket sRequest = new Socket(request.getHost(), 80);
+			
+			BufferedWriter toServer = new BufferedWriter(new OutputStreamWriter(sRequest.getOutputStream()));
+			BufferedReader fromServer = new BufferedReader(new InputStreamReader(sRequest.getInputStream()));
+			HttpIO.send(data, toServer);
+			//toServer.close();
+			sRequest.shutdownOutput();
+			//sRequest.shutdownOutput();
+			/*
+			  	String newData = null;
+			    while((newData = fromServer.readLine()) != null) {
+				System.out.println(newData);
+				writer.write(newData + "\r\n");
+			}*/
+			while(!sRequest.isInputShutdown()) {
+				int d;
+				while((d = fromServer.read()) != -1) {
+						writer.write(d);
+				}
+				writer.flush();
+			}
+			
+			//fromServer.close();
+			sRequest.shutdownInput();
+			socket_.shutdownOutput();
+
+			
+			sRequest.close();
+			socket_.close();
+			
+			
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
