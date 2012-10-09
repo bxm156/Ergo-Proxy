@@ -4,7 +4,8 @@ public class HttpRequest {
 	private String get;
 	private String version;
 	private String host;
-	private String proxyconnection;
+	private String connection;
+	private String cacheControl;
 	private String useragent;
 	private String accept;
 	private String acceptencoding;
@@ -31,16 +32,22 @@ public class HttpRequest {
 	public void setVersion(String version) {
 		this.version = version;
 	}
-	public String getProxyconnection() {
-		return proxyconnection;
+	public String getConnection() {
+		return connection;
 	}
-	public void setProxyconnection(String proxyconnection) {
-		this.proxyconnection = proxyconnection;
+	public void setConnection(String proxyconnection) {
+		this.connection = proxyconnection;
 	}
-	public String getUseragent() {
+	public String getCacheControl() {
+		return cacheControl;
+	}
+	public void setCacheControl(String cacheControl) {
+		this.cacheControl = cacheControl;
+	}
+	public String getUserAgent() {
 		return useragent;
 	}
-	public void setUseragent(String useragent) {
+	public void setUserAgent(String useragent) {
 		this.useragent = useragent;
 	}
 	public String getAccept() {
@@ -49,22 +56,22 @@ public class HttpRequest {
 	public void setAccept(String accept) {
 		this.accept = accept;
 	}
-	public String getAcceptencoding() {
+	public String getAcceptEncoding() {
 		return acceptencoding;
 	}
-	public void setAcceptencoding(String acceptencoding) {
+	public void setAcceptEncoding(String acceptencoding) {
 		this.acceptencoding = acceptencoding;
 	}
-	public String getAcceptlanguage() {
+	public String getAcceptLanguage() {
 		return acceptlanguage;
 	}
-	public void setAcceptlanguage(String acceptlanguage) {
+	public void setAcceptLanguage(String acceptlanguage) {
 		this.acceptlanguage = acceptlanguage;
 	}
-	public String getAcceptcharset() {
+	public String getAcceptCharset() {
 		return acceptcharset;
 	}
-	public void setAcceptcharset(String acceptcharset) {
+	public void setAcceptCharset(String acceptcharset) {
 		this.acceptcharset = acceptcharset;
 	}
 	public String getCookie() {
