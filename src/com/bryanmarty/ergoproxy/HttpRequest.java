@@ -13,6 +13,8 @@ public class HttpRequest {
 	private String acceptcharset;
 	private String cookie;
 	private String dnt;
+	
+	private int responseCode;
 	private int contentLength;
 	private int bodyLength;
 	private String body;
@@ -106,5 +108,11 @@ public class HttpRequest {
 	}
 	public void setBodyLength(int bodyLength) {
 		this.bodyLength = bodyLength;
+	}
+	public int getResponseCode() {
+		return responseCode;
+	}
+	public void setResponseCode(int responseCode) {
+		this.responseCode = responseCode;
 	}
 }
