@@ -56,24 +56,29 @@ public class SocketTask implements Runnable {
 			Socket sRequest = new Socket(request.getHost(), 80);
 			
 			BufferedWriter toServer = new BufferedWriter(new OutputStreamWriter(sRequest.getOutputStream()));
+			//BufferedReader fromServer = new BufferedReader(new InputStreamReader(sRequest.getInputStream()));
 			BufferedReader fromServer = new BufferedReader(new InputStreamReader(sRequest.getInputStream()));
 			HttpIO.send(data, toServer);
-			//toServer.close();
-			sRequest.shutdownOutput();
-			//sRequest.shutdownOutput();
-			/*
-			  	String newData = null;
-			    while((newData = fromServer.readLine()) != null) {
-				System.out.println(newData);
-				writer.write(newData + "\r\n");
-			}*/
+			
+			StringBuffer sb = new StringBuffer();
+			char[] buffer = new char[1024];
+			int d;
 			while(!sRequest.isInputShutdown()) {
-				int d;
-				while((d = fromServer.read()) != -1) {
-						writer.write(d);
-				}
-				writer.flush();
+				if(fromServer.ready()) {
+					while((d = fromServer.read(buffer,0,buffer.length)) != -1) {
+						String s = new String(buffer, 0, d);
+						sb.append(s);
+						if(!fromServer.ready()) {
+							break;
+						}
+					}
+					if(sb.length() > 0 && HttpParser.validate(sb.toString())) {
+						break;
+					}
+				}				
 			}
+			writer.write(sb.toString());
+			writer.flush();
 			
 			//fromServer.close();
 			sRequest.shutdownInput();
@@ -87,6 +92,9 @@ public class SocketTask implements Runnable {
 			
 		} catch (IOException e) {
 			e.printStackTrace();
+		//} catch (InterruptedException e) {
+		//	// TODO Auto-generated catch block
+		//	e.printStackTrace();
 		} finally {
 			try {
 				socket_.close();

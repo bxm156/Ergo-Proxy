@@ -13,6 +13,9 @@ public class HttpRequest {
 	private String acceptcharset;
 	private String cookie;
 	private String dnt;
+	private int contentLength;
+	private int bodyLength;
+	private String body;
 	
 	public String getGet() {
 		return get;
@@ -85,5 +88,23 @@ public class HttpRequest {
 	}
 	public void setDnt(String dnt) {
 		this.dnt = dnt;
+	}
+	public int getContentLength() {
+		return contentLength;
+	}
+	public void setContentLength(int contentLength) {
+		this.contentLength = contentLength;
+	}
+	public String getBody() {
+		return body;
+	}
+	public void setBody(String body) {
+		this.body = body;
+	}
+	public int getBodyLength() {
+		return bodyLength;
+	}
+	public void setBodyLength(int bodyLength) {
+		this.bodyLength = bodyLength;
 	}
 }

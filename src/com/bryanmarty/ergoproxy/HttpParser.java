@@ -1,10 +1,12 @@
 package com.bryanmarty.ergoproxy;
 
+import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class HttpParser {
 	
+	//Request
 	public static final Pattern pGetVersion = Pattern.compile("^GET[\\W]{1}(.*)[\\W]{1}HTTP/(1.1).*$",Pattern.MULTILINE);
 	public static final Pattern pHost = Pattern.compile("^Host:[\\W]+(.*)$",Pattern.MULTILINE);
 	public static final Pattern pConnection = Pattern.compile("^Connection:[\\W]+(.*)$",Pattern.MULTILINE);
@@ -17,6 +19,12 @@ public class HttpParser {
 	public static final Pattern pCookie = Pattern.compile("^Cookie:[\\W]+(.*)$",Pattern.MULTILINE);
 	public static final Pattern pDNT = Pattern.compile("^DNT:[\\W]+(.*)$",Pattern.MULTILINE);
 	
+	public static final Pattern pBody = Pattern.compile("^\\s*$^(.*)");
+	
+	
+	//Response
+	public static final Pattern pContentLength = Pattern.compile("^Content-Length:[\\W]+([0-9]+)$",Pattern.MULTILINE);
+	
 	public static HttpRequest parse(String info) {
 		HttpRequest request = new HttpRequest();
 		
@@ -26,8 +34,6 @@ public class HttpParser {
 			request.setGet(m.group(1).trim());
 			request.setVersion(m.group(2).trim());
 		}
-		
-		request.setHost(info);
 		
 		m = pHost.matcher(info);
 		if(m.find()) {
@@ -78,8 +84,43 @@ public class HttpParser {
 		if(m.find()) {
 			request.setDnt(m.group(1).trim());
 		}
-
+		
+		m = pContentLength.matcher(info);
+		if(m.find()) {
+			request.setContentLength(Integer.parseInt(m.group(1)));
+		}
+		
+		Scanner sc = new Scanner(info);
+		sc.useDelimiter("\r\n");
+		boolean parseBody = false;
+		int sum = 0;
+		while (sc.hasNextLine()) {
+			String line = sc.nextLine();
+			System.out.println(line);
+			if(line.isEmpty()) {
+				parseBody = true;
+			}
+			if(parseBody) {
+				sum += line.length() + 2;
+			}
+		}
+		request.setBodyLength(sum);
 		return request;
+	}
+	
+	public static boolean validate(String data) {
+		try {
+			HttpRequest request = parse(data);
+			//System.out.println("Body:" + request.getBody());
+			System.out.println("Content-Length:" + request.getContentLength());
+			System.out.println("SUM: " + request.getBodyLength());
+			if (request.getContentLength() <= request.getBodyLength()) {
+				return true;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
 	}
 
 }
