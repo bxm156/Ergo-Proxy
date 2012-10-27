@@ -6,6 +6,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -52,7 +53,11 @@ public class ThreadPoolServer {
 							e.printStackTrace();
 						}
 						SocketTask task = new SocketTask(mySocket);
-						workerPool_.execute(task);
+						try {
+							workerPool_.execute(task);
+						} catch (RejectedExecutionException ree) {
+							ree.printStackTrace();
+						}
 					}
 				}
 			});
