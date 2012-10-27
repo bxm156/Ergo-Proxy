@@ -107,7 +107,7 @@ public class HttpParser {
 				parseBody = true;
 			}
 			if(parseBody) {
-				sum += line.length() + 2;
+				sum += line.length() + "\r\n".getBytes().length;
 			}
 		}
 		request.setBodyLength(sum);
@@ -136,7 +136,7 @@ public class HttpParser {
 				return hasNewLine(data);
 			}
 			
-			if(request.getResponseCode() == 301) {
+			if(request.getResponseCode() == 301 || request.getResponseCode() == 302) {
 				return hasNewLine(data);
 			}
 			

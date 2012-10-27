@@ -63,7 +63,11 @@ public class SocketTask implements Runnable {
 			StringBuffer sb = new StringBuffer();
 			char[] buffer = new char[1024];
 			int d;
+			long startTime = System.currentTimeMillis();
 			while(!sRequest.isInputShutdown()) {
+				if(startTime - System.currentTimeMillis() > 7000) {
+					break;
+				}
 				if(fromServer.ready()) {
 					while((d = fromServer.read(buffer,0,buffer.length)) != -1) {
 						String s = new String(buffer, 0, d);
