@@ -59,7 +59,7 @@ public class SocketTask implements Runnable {
 			
 			int d;
 			byte[] buffer = new byte[4098];
-			while(true) {
+			while(socket_.isConnected() && sRequest.isConnected()) {
 				d = sRequest.getInputStream().read(buffer,0,buffer.length);
 				if(d == -1) {
 					break;
