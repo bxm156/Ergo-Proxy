@@ -5,17 +5,34 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class SocketTask implements Runnable {
 
 	private static final String NEW_LINE = "\r\n";
 	private static final DataCache DATA_CACHE = DataCache.getInstance();
 	private final Socket socket_;
+	private BlockingQueue<Runnable> blockingQueue_;
+	private ThreadPoolExecutor workerPool_;
+	private LinkedList<Future<ByteBuffer>> futureList = new LinkedList<Future<ByteBuffer>>();
 	
 	public SocketTask(Socket clientSocket) {
 		socket_ = clientSocket;
+		blockingQueue_ = new LinkedBlockingQueue<Runnable>();
+		workerPool_ = new ThreadPoolExecutor(5, 10, 1, TimeUnit.SECONDS, blockingQueue_);
 	}
 
 	@Override
@@ -23,88 +40,88 @@ public class SocketTask implements Runnable {
 		if(socket_ == null) {
 			return;
 		}
+		
 		try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(socket_.getInputStream()));
-			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket_.getOutputStream()));
-			
-			StringBuffer dataBuffer = new StringBuffer();
-			String line;
-			while ((line = reader.readLine()) != null) {
-				//HTTP Response are terminated by a blank line
-				if(line.isEmpty()) {
+			while(socket_.isConnected()) {
+				if(socket_.isClosed()) {
 					break;
 				}
-				dataBuffer.append(line);
-				dataBuffer.append(NEW_LINE);
-			}
-			//reader.close();
-			socket_.shutdownInput();
-			
-			String data = dataBuffer.toString();
-			//System.out.println(data);
-			HttpRequest request = HttpParser.parse(data);
-			/*
-			//First look for the file
-			File f = null;
-			if( (f = DATA_CACHE.retrieve(request.getConnection(), request.getGet())) != null) {
-				//We have a file in the cache to return
-			} else {
-				//We must request the file from the server
-				//Socket sRequest = new So
-			}*/
-			
-			Socket sRequest = new Socket(request.getHost(), 80);
-			
-			BufferedWriter toServer = new BufferedWriter(new OutputStreamWriter(sRequest.getOutputStream()));
-			//BufferedReader fromServer = new BufferedReader(new InputStreamReader(sRequest.getInputStream()));
-			BufferedReader fromServer = new BufferedReader(new InputStreamReader(sRequest.getInputStream()));
-			HttpIO.send(data, toServer);
-			
-			StringBuffer sb = new StringBuffer();
-			char[] buffer = new char[1024];
-			int d;
-			long startTime = System.currentTimeMillis();
-			while(!sRequest.isInputShutdown()) {
-				if(startTime - System.currentTimeMillis() > 7000) {
-					break;
-				}
-				if(fromServer.ready()) {
-					while((d = fromServer.read(buffer,0,buffer.length)) != -1) {
-						String s = new String(buffer, 0, d);
-						sb.append(s);
-						if(!fromServer.ready()) {
-							break;
+				socket_.setSoTimeout(500);
+				BufferedReader clientInput = new BufferedReader(new InputStreamReader(socket_.getInputStream(),"US-ASCII"));
+				OutputStream os = socket_.getOutputStream();
+				
+				while(clientInput.ready()) {
+					String line = null;
+					StringBuffer bufferData = new StringBuffer();
+					try {
+						while( (line = clientInput.readLine()) != null) {
+							if(line.isEmpty()) {
+								bufferData.append(NEW_LINE);
+								break;
+							}
+							bufferData.append(line + NEW_LINE);
 						}
-					}
-					if(sb.length() > 0 && HttpParser.validate(sb.toString())) {
+					} catch (SocketTimeoutException ste) {
+						//ste.printStackTrace();
 						break;
 					}
-				}				
+				
+					HttpRequest request = HttpParser.parse(bufferData.toString());
+					DownloadTask task = new DownloadTask(request);
+					futureList.add(workerPool_.submit(task));
+				}
+				try {
+					for (Future<ByteBuffer> future : futureList) {
+						if(socket_.isClosed()) {
+							break;
+						}
+						ByteBuffer download = future.get(10, TimeUnit.MILLISECONDS);
+						download.flip();
+						if(!socket_.isOutputShutdown()) {
+							byte[] buffer = new byte[1024];
+							int length = 0;
+							while(download.hasRemaining()) {
+								try{
+									length = Math.min(download.remaining(),1024);
+									download.get(buffer, 0, length);
+									os.write(buffer);
+									os.flush();
+								} catch(SocketException e) {
+									//e.printStackTrace();
+									socket_.close();
+									break;
+									//System.out.println("Buffer: " + buffer + " AS " + new String(buffer,0,length));
+								}
+							}
+						}
+					}
+				} catch (TimeoutException te) {
+					
+				} catch (ExecutionException ee) {
+					ee.printStackTrace();
+					socket_.close();
+				} catch (InterruptedException ie) {
+					socket_.close();
+					ie.printStackTrace();
+				}
 			}
-			writer.write(sb.toString());
-			writer.flush();
 			
-			//fromServer.close();
-			sRequest.shutdownInput();
-			socket_.shutdownOutput();
-
-			
-			sRequest.close();
+		if(socket_.isConnected()) {
 			socket_.close();
+		}
+		workerPool_.shutdownNow();
 			
-			
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-		//} catch (InterruptedException e) {
-		//	// TODO Auto-generated catch block
-		//	e.printStackTrace();
-		} finally {
-			try {
-				socket_.close();
-			} catch (IOException e) {
-				e.printStackTrace();
+		} catch (SocketException se) {
+			if(!socket_.isClosed()) {
+				try {
+					socket_.close();
+				} catch (IOException io) {
+					
+				}
 			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
