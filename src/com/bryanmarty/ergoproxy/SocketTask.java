@@ -23,58 +23,48 @@ public class SocketTask implements Runnable {
 		if(socket_ == null) {
 			return;
 		}
+		int count = 1;
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(socket_.getInputStream()));
 			//BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket_.getOutputStream()));
 			
 			StringBuffer dataBuffer = new StringBuffer();
 			String line;
-			while ((line = reader.readLine()) != null) {
-				//HTTP Response are terminated by a blank line
-				if(line.isEmpty()) {
+			while(socket_.isConnected()) {
+				while ((line = reader.readLine()) != null) {
+					System.out.println("Line: " + line);
+					//HTTP Response are terminated by a blank line
+					if(line.isEmpty()) {
+						break;
+					}
+					dataBuffer.append(line);
+					dataBuffer.append(NEW_LINE);
+				}
+				if(line == null) {
 					break;
 				}
-				dataBuffer.append(line);
-				dataBuffer.append(NEW_LINE);
-			}
-			socket_.shutdownInput();
-			
-			String data = dataBuffer.toString();
-			HttpRequest request = HttpParser.parse(data);
-			/*
-			//First look for the file
-			File f = null;
-			if( (f = DATA_CACHE.retrieve(request.getConnection(), request.getGet())) != null) {
-				//We have a file in the cache to return
-			} else {
-				//We must request the file from the server
-				//Socket sRequest = new So
-			}*/
-			
-			Socket sRequest = new Socket(request.getHost(), 80);
-			
-			BufferedWriter toServer = new BufferedWriter(new OutputStreamWriter(sRequest.getOutputStream()));
-			HttpIO.send(data, toServer);
-			sRequest.shutdownOutput();
-			
-			int d;
-			byte[] buffer = new byte[4098];
-			while(socket_.isConnected() && sRequest.isConnected()) {
-				d = sRequest.getInputStream().read(buffer,0,buffer.length);
-				if(d == -1) {
-					break;
+				System.out.println("Finished Reading");
+				System.out.println("Count: " + count);
+				count++;
+				String data = dataBuffer.toString();
+				HttpRequest request = HttpParser.parse(data);
+				Socket sRequest = new Socket(request.getHost(), 80);
+				BufferedWriter toServer = new BufferedWriter(new OutputStreamWriter(sRequest.getOutputStream()));
+				HttpIO.send(data, toServer);
+				
+				int d;
+				byte[] buffer = new byte[4098];
+				while(socket_.isConnected() && sRequest.isConnected()) {
+					d = sRequest.getInputStream().read(buffer,0,buffer.length);
+					if(d == -1) {	
+						break;
+					}
+					socket_.getOutputStream().write(buffer, 0, d);
+					socket_.getOutputStream().flush();
 				}
-				System.out.println(new String(buffer,0,d));
-				socket_.getOutputStream().write(buffer,0,d);
-				socket_.getOutputStream().flush();
-
-			}
-			sRequest.close();
-			socket_.getOutputStream().flush();
-			socket_.shutdownOutput();
-			toServer.close();
-			
-			
+				System.out.println("Server responded and terminated");
+				sRequest.close();
+			}	
 			
 		} catch (IOException e) {
 			e.printStackTrace();
