@@ -32,7 +32,7 @@ public class SocketTask implements Runnable {
 	public SocketTask(Socket clientSocket) {
 		socket_ = clientSocket;
 		blockingQueue_ = new LinkedBlockingQueue<Runnable>();
-		workerPool_ = new ThreadPoolExecutor(1, 3, 1, TimeUnit.SECONDS, blockingQueue_);
+		workerPool_ = new ThreadPoolExecutor(1, 3, 10, TimeUnit.SECONDS, blockingQueue_);
 	}
 
 	@Override
@@ -78,11 +78,12 @@ public class SocketTask implements Runnable {
 						ByteBuffer download = future.get(10, TimeUnit.MILLISECONDS);
 						download.flip();
 						if(!socket_.isOutputShutdown()) {
-							byte[] buffer = new byte[1024];
+							int min = socket_.getReceiveBufferSize();
+							byte[] buffer = new byte[min];
 							int length = 0;
 							while(download.hasRemaining()) {
 								try{
-									length = Math.min(download.remaining(),1024);
+									length = Math.min(download.remaining(),min);
 									download.get(buffer, 0, length);
 									os.write(buffer);
 									os.flush();
