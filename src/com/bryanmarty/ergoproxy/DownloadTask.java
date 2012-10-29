@@ -16,7 +16,7 @@ public class DownloadTask implements Callable<ByteBuffer> {
 	
 	public DownloadTask(HttpRequest request) {
 		request_ = request;
-		data = ByteBuffer.allocate(1024*1024*10);
+		data = ByteBuffer.allocate(1024*1024*1);
 	}
 	
 	@Override
@@ -24,7 +24,7 @@ public class DownloadTask implements Callable<ByteBuffer> {
 		Socket serverSocket = new Socket(request_.getHost(),request_.getPort());
 		InputStream is = serverSocket.getInputStream();
 		OutputStream os = serverSocket.getOutputStream();
-		serverSocket.setSoTimeout(5000);
+		serverSocket.setSoTimeout(4000);
 		System.out.println(request_.getRequest()+"---");
 		os.write(request_.getRequest().getBytes("US-ASCII"));
 		os.flush();
@@ -34,7 +34,7 @@ public class DownloadTask implements Callable<ByteBuffer> {
 		try {
 			while(( d = is.read(buffer,0,buffer.length)) != -1) {
 	
-				System.out.println(new String(buffer,0,d));
+				//System.out.println(new String(buffer,0,d));
 				//try {
 					data.put(buffer, 0, d);
 				//} /*catch (BufferOverflowException boe) {

@@ -4,6 +4,7 @@ public class HttpRequest {
 	private String host;
 	private int port = 80;
 	private String request;
+	private String version = "";
 	
 	public String getHost() {
 		return host;
@@ -22,5 +23,11 @@ public class HttpRequest {
 	}
 	public void setRequest(String request) {
 		this.request = request;
+	}
+	public void setVersion(String trim) {
+		this.version = trim;
+	}
+	public String getVersion() {
+		return this.version;
 	}
 }

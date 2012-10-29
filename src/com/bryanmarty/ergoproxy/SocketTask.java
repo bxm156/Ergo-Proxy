@@ -32,7 +32,7 @@ public class SocketTask implements Runnable {
 	public SocketTask(Socket clientSocket) {
 		socket_ = clientSocket;
 		blockingQueue_ = new LinkedBlockingQueue<Runnable>();
-		workerPool_ = new ThreadPoolExecutor(5, 10, 1, TimeUnit.SECONDS, blockingQueue_);
+		workerPool_ = new ThreadPoolExecutor(1, 3, 1, TimeUnit.SECONDS, blockingQueue_);
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public class SocketTask implements Runnable {
 				if(socket_.isClosed()) {
 					break;
 				}
-				socket_.setSoTimeout(5000);
+				socket_.setSoTimeout(4000);
 				BufferedReader clientInput = new BufferedReader(new InputStreamReader(socket_.getInputStream(),"US-ASCII"));
 				OutputStream os = socket_.getOutputStream();
 				
