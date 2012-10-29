@@ -46,7 +46,7 @@ public class SocketTask implements Runnable {
 				if(socket_.isClosed()) {
 					break;
 				}
-				socket_.setSoTimeout(500);
+				socket_.setSoTimeout(5000);
 				BufferedReader clientInput = new BufferedReader(new InputStreamReader(socket_.getInputStream(),"US-ASCII"));
 				OutputStream os = socket_.getOutputStream();
 				

@@ -24,7 +24,7 @@ public class DownloadTask implements Callable<ByteBuffer> {
 		Socket serverSocket = new Socket(request_.getHost(),request_.getPort());
 		InputStream is = serverSocket.getInputStream();
 		OutputStream os = serverSocket.getOutputStream();
-		//serverSocket.setSoTimeout(2000);
+		serverSocket.setSoTimeout(5000);
 		System.out.println(request_.getRequest()+"---");
 		os.write(request_.getRequest().getBytes("US-ASCII"));
 		os.flush();
@@ -49,7 +49,7 @@ public class DownloadTask implements Callable<ByteBuffer> {
 			if(serverSocket.isConnected()) {
 				serverSocket.close();
 			}
-			throw ste;
+			//throw ste;
 		} catch(Exception e) {
 			e.printStackTrace();
 			throw e;
