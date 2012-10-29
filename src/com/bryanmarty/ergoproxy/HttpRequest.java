@@ -13,7 +13,14 @@ public class HttpRequest {
 	private String acceptcharset;
 	private String cookie;
 	private String dnt;
+	private int port = 80;
 	
+	public int getPort() {
+		return port;
+	}
+	public void setPort(int port) {
+		this.port = port;
+	}
 	private int responseCode;
 	private int contentLength;
 	private int bodyLength;

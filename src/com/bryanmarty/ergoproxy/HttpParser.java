@@ -43,7 +43,16 @@ public class HttpParser {
 		
 		m = pHost.matcher(info);
 		if(m.find()) {
-			request.setHost(m.group(1).trim());
+			String host = m.group(1).trim();
+			String[] list = host.split(":");
+			if(list.length == 1) {
+				request.setHost(host);
+			}
+			if(list.length == 2) {
+				request.setHost(list[0]);
+				request.setPort(Integer.valueOf(list[1]));
+			}
+			
 		}
 		
 		m = pConnection.matcher(info);

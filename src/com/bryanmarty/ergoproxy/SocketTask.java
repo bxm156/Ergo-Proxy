@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.util.Scanner;
 
 public class SocketTask implements Runnable {
 
@@ -28,19 +29,26 @@ public class SocketTask implements Runnable {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(socket_.getInputStream()));
 			//BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket_.getOutputStream()));
 			
-			StringBuffer dataBuffer = new StringBuffer();
-			String line;
-			while(socket_.isConnected()) {
-				while ((line = reader.readLine()) != null) {
-					System.out.println("Line: " + line);
-					//HTTP Response are terminated by a blank line
+			String line = null;
+			while(!socket_.isInputShutdown()) {
+				
+				StringBuffer dataBuffer = new StringBuffer();
+				
+				
+				Scanner sc = new Scanner(socket_.getInputStream());
+				sc.useDelimiter("\r\n");
+				while (sc.hasNextLine()) {
+					line = sc.nextLine();
 					if(line.isEmpty()) {
+						dataBuffer.append(NEW_LINE);
 						break;
 					}
 					dataBuffer.append(line);
 					dataBuffer.append(NEW_LINE);
 				}
+
 				if(line == null) {
+					socket_.shutdownOutput();
 					break;
 				}
 				System.out.println("Finished Reading");
@@ -48,22 +56,26 @@ public class SocketTask implements Runnable {
 				count++;
 				String data = dataBuffer.toString();
 				HttpRequest request = HttpParser.parse(data);
-				Socket sRequest = new Socket(request.getHost(), 80);
+				Socket sRequest = new Socket(request.getHost(), request.getPort());
 				BufferedWriter toServer = new BufferedWriter(new OutputStreamWriter(sRequest.getOutputStream()));
 				HttpIO.send(data, toServer);
-				
+				sRequest.shutdownOutput();
 				int d;
 				byte[] buffer = new byte[4098];
-				while(socket_.isConnected() && sRequest.isConnected()) {
+				while(!socket_.isOutputShutdown() && !sRequest.isInputShutdown()) {
 					d = sRequest.getInputStream().read(buffer,0,buffer.length);
-					if(d == -1) {	
+					if(d == -1) {
+						sRequest.close();
 						break;
 					}
 					socket_.getOutputStream().write(buffer, 0, d);
 					socket_.getOutputStream().flush();
+					
 				}
 				System.out.println("Server responded and terminated");
-				sRequest.close();
+				if(!reader.ready()) {
+					break;
+				}
 			}	
 			
 		} catch (IOException e) {

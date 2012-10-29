@@ -20,7 +20,7 @@ public class ThreadPoolServer {
 	public ThreadPoolServer(int port) {
 		port_ = port;
 		blockingQueue_ = new LinkedBlockingQueue<Runnable>();
-		workerPool_ = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES, blockingQueue_);
+		workerPool_ = new ThreadPoolExecutor(5, 100, 1, TimeUnit.MINUTES, blockingQueue_);
 	}
 	
 	public synchronized void start() {
