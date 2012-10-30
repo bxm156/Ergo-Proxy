@@ -20,7 +20,7 @@ public class DownloadThread extends Thread {
 	@Override
 	public void run() {
 		int d;
-		byte[] buffer = new byte[2048*2];
+		byte[] buffer = new byte[1024*1024];
 		try {
 			InputStream sis = server_.getInputStream();
 			OutputStream sos = server_.getOutputStream();

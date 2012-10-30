@@ -1,31 +1,17 @@
 package com.bryanmarty.ergoproxy;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class SocketTask implements Runnable {
 
 	private static final String NEW_LINE = "\r\n";
-	private static final DNSCache DNS_CACHE = DNSCache.getInstance();
-	private final Socket client_;
+	private static DNSCache DNS_CACHE = DNSCache.getInstance();
+	private Socket client_;
 	private Socket server_;
 	private DownloadThread download_;
 	
@@ -38,27 +24,39 @@ public class SocketTask implements Runnable {
 		if(client_ == null) {
 			return;
 		}
-		
+		BufferedReader clientInput = null;
+		OutputStream cos = null;
+		try {
+			clientInput = new BufferedReader(new InputStreamReader(client_.getInputStream(),"US-ASCII"));;
+			cos = client_.getOutputStream();
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+			closeClient();
+			return;
+		}
 		try {
 			while(client_.isConnected()) {
-				BufferedReader clientInput = new BufferedReader(new InputStreamReader(client_.getInputStream(),"US-ASCII"));
-				OutputStream cos = client_.getOutputStream();
+				
 				
 				String line = null;
 				StringBuffer bufferData = new StringBuffer();
 				
 				while((line = clientInput.readLine()) != null) {
-					if(line.isEmpty()) {
+					if(line.isEmpty() && bufferData.length() > 0) {
 						bufferData.append(NEW_LINE);
 						break;
 					}
 					bufferData.append(line + NEW_LINE);
 				}
+				if(line == null) {
+					break;
+				}
 				
 				String data = bufferData.toString();
+				if(data.isEmpty()) {
+					continue;
+				}
 				HttpRequest request = HttpParser.parse(data);
-				
-				closeDownloadThread();
 				
 				//EECS 425 DNS Cache
 				InetAddress hostIP = null;
@@ -68,20 +66,23 @@ public class SocketTask implements Runnable {
 					continue;
 				}
 				
-				server_ = new Socket(request.getHost(),request.getPort());
+				closeDownloadThread();
+				
+				server_ = new Socket(hostIP,request.getPort());
 				if(server_.isConnected()) {
 					download_ = new DownloadThread(cos,server_,request);
 					download_.start();
+				} else {
+					throw new Exception("Unable to connect to server!");
 				}
 				
 				
 			}
-		} catch (IOException e) {
-			
+		} catch (Exception e) {
+
 		} finally {
 			closeDownloadThread();
 			closeClient();
-			
 		}
 	}
 	
