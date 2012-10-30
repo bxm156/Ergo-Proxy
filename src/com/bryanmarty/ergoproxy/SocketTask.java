@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -23,106 +24,87 @@ import java.util.concurrent.TimeoutException;
 public class SocketTask implements Runnable {
 
 	private static final String NEW_LINE = "\r\n";
-	private static final DataCache DATA_CACHE = DataCache.getInstance();
-	private final Socket socket_;
-	private BlockingQueue<Runnable> blockingQueue_;
-	private ThreadPoolExecutor workerPool_;
-	private LinkedList<Future<ByteBuffer>> futureList = new LinkedList<Future<ByteBuffer>>();
+	private static final DNSCache DNS_CACHE = DNSCache.getInstance();
+	private final Socket client_;
+	private Socket server_;
+	private DownloadThread download_;
 	
 	public SocketTask(Socket clientSocket) {
-		socket_ = clientSocket;
-		blockingQueue_ = new LinkedBlockingQueue<Runnable>();
-		workerPool_ = new ThreadPoolExecutor(1, 3, 10, TimeUnit.SECONDS, blockingQueue_);
+		client_ = clientSocket;
 	}
 
 	@Override
 	public void run() {
-		if(socket_ == null) {
+		if(client_ == null) {
 			return;
 		}
 		
 		try {
-			while(socket_.isConnected()) {
-				if(socket_.isClosed()) {
-					break;
-				}
-				socket_.setSoTimeout(4000);
-				BufferedReader clientInput = new BufferedReader(new InputStreamReader(socket_.getInputStream(),"US-ASCII"));
-				OutputStream os = socket_.getOutputStream();
+			while(client_.isConnected()) {
+				BufferedReader clientInput = new BufferedReader(new InputStreamReader(client_.getInputStream(),"US-ASCII"));
+				OutputStream cos = client_.getOutputStream();
 				
-				while(clientInput.ready()) {
-					String line = null;
-					StringBuffer bufferData = new StringBuffer();
-					try {
-						while( (line = clientInput.readLine()) != null) {
-							if(line.isEmpty()) {
-								bufferData.append(NEW_LINE);
-								break;
-							}
-							bufferData.append(line + NEW_LINE);
-						}
-					} catch (SocketTimeoutException ste) {
-						//ste.printStackTrace();
+				String line = null;
+				StringBuffer bufferData = new StringBuffer();
+				
+				while((line = clientInput.readLine()) != null) {
+					if(line.isEmpty()) {
+						bufferData.append(NEW_LINE);
 						break;
 					}
+					bufferData.append(line + NEW_LINE);
+				}
 				
-					HttpRequest request = HttpParser.parse(bufferData.toString());
-					DownloadTask task = new DownloadTask(request);
-					futureList.add(workerPool_.submit(task));
-				}
+				String data = bufferData.toString();
+				HttpRequest request = HttpParser.parse(data);
+				
+				closeDownloadThread();
+				
+				//EECS 425 DNS Cache
+				InetAddress hostIP = null;
 				try {
-					for (Future<ByteBuffer> future : futureList) {
-						if(socket_.isClosed()) {
-							break;
-						}
-						ByteBuffer download = future.get(10, TimeUnit.MILLISECONDS);
-						download.flip();
-						if(!socket_.isOutputShutdown()) {
-							int min = socket_.getReceiveBufferSize();
-							byte[] buffer = new byte[min];
-							int length = 0;
-							while(download.hasRemaining()) {
-								try{
-									length = Math.min(download.remaining(),min);
-									download.get(buffer, 0, length);
-									os.write(buffer,0,length);
-									os.flush();
-								} catch(SocketException e) {
-									//e.printStackTrace();
-									socket_.close();
-									break;
-									//System.out.println("Buffer: " + buffer + " AS " + new String(buffer,0,length));
-								}
-							}
-						}
-					}
-				} catch (TimeoutException te) {
-					
-				} catch (ExecutionException ee) {
-					ee.printStackTrace();
-					socket_.close();
-				} catch (InterruptedException ie) {
-					socket_.close();
-					ie.printStackTrace();
+					hostIP = DNS_CACHE.retrieve(request.getHost());
+				} catch (NullPointerException npe) {
+					continue;
 				}
-			}
-			
-		if(socket_.isConnected()) {
-			socket_.close();
-		}
-		workerPool_.shutdownNow();
-			
-		} catch (SocketException se) {
-			if(!socket_.isClosed()) {
-				try {
-					socket_.close();
-				} catch (IOException io) {
-					
+				
+				server_ = new Socket(request.getHost(),request.getPort());
+				if(server_.isConnected()) {
+					download_ = new DownloadThread(cos,server_,request);
+					download_.start();
 				}
+				
+				
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			
+		} finally {
+			closeDownloadThread();
+			closeClient();
+			
+		}
+	}
+	
+	public void closeDownloadThread() {
+		try {
+			if(server_ != null) {
+				server_.close();
+				if(download_ != null) {
+					download_.join();
+				}
+			}
+		} catch (Exception e) {
 			e.printStackTrace();
+		}
+	}
+	
+	public void closeClient() {
+		if(!client_.isClosed()) {
+			try {
+				client_.close();
+			} catch (IOException io) {
+				
+			}
 		}
 	}
 
