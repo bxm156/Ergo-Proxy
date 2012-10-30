@@ -34,7 +34,7 @@ public class DownloadTask implements Callable<ByteBuffer> {
 		try {
 			while(( d = is.read(buffer,0,buffer.length)) != -1) {
 	
-				//System.out.println(new String(buffer,0,d));
+				System.out.println(new String(buffer,0,d));
 				//try {
 					data.put(buffer, 0, d);
 				//} /*catch (BufferOverflowException boe) {

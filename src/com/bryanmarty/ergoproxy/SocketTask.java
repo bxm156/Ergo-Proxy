@@ -85,7 +85,7 @@ public class SocketTask implements Runnable {
 								try{
 									length = Math.min(download.remaining(),min);
 									download.get(buffer, 0, length);
-									os.write(buffer);
+									os.write(buffer,0,length);
 									os.flush();
 								} catch(SocketException e) {
 									//e.printStackTrace();

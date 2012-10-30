@@ -24,7 +24,7 @@ public class HttpParser {
 		if(m.find()) {
 			request.setHost(m.group(1).trim());
 		}
-		//if (request.getVersion().contentEquals("1.1")) {
+		/*if (request.getVersion().contentEquals("1.1")) {
 			m = pConnection.matcher(info);
 			if(m.find()) {
 				info = m.replaceFirst("Connection: close\r\n");
@@ -34,7 +34,7 @@ public class HttpParser {
 			if(m.find()) {
 				info = m.replaceFirst("Proxy-Connection: close");
 			}
-		//}
+		}*/
 		
 		System.out.println(info);
 		request.setRequest(info);
