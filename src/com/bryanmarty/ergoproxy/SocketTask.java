@@ -26,6 +26,7 @@ public class SocketTask implements Runnable {
 		}
 		BufferedReader clientInput = null;
 		OutputStream cos = null;
+		//Setup the input and output stream to the client.
 		try {
 			clientInput = new BufferedReader(new InputStreamReader(client_.getInputStream(),"US-ASCII"));;
 			cos = client_.getOutputStream();
@@ -36,19 +37,20 @@ public class SocketTask implements Runnable {
 		}
 		try {
 			while(client_.isConnected()) {
-				
-				
 				String line = null;
 				StringBuffer bufferData = new StringBuffer();
-				
+				//Read HTTP Requests
 				while((line = clientInput.readLine()) != null) {
 					if(line.isEmpty() && bufferData.length() > 0) {
+						//We have read an entire request terminated by a empty line.
 						bufferData.append(NEW_LINE);
 						break;
 					}
 					bufferData.append(line + NEW_LINE);
 				}
+				
 				if(line == null) {
+					//End the task
 					break;
 				}
 				
@@ -61,31 +63,39 @@ public class SocketTask implements Runnable {
 				//EECS 425 DNS Cache
 				InetAddress hostIP = null;
 				try {
+					//Try and retrieve the IP Address
 					hostIP = DNS_CACHE.retrieve(request.getHost());
 				} catch (NullPointerException npe) {
-					continue;
+					continue; //If the host was empty, ignore the request.
 				}
 				
+				//Before we open a new request to a server, close the existing
+				//connection to the previous remote server
 				closeDownloadThread();
 				
+				//Connect to the server
 				server_ = new Socket(hostIP,request.getPort());
 				if(server_.isConnected()) {
+					//Start the thread to transfer data to the client
 					download_ = new DownloadThread(cos,server_,request);
 					download_.start();
 				} else {
 					throw new Exception("Unable to connect to server!");
 				}
-				
-				
 			}
 		} catch (Exception e) {
 
 		} finally {
+			//Stop the download thread and close the socket to the client.
 			closeDownloadThread();
 			closeClient();
 		}
 	}
 	
+	/**
+	 * Close the download thread by closing the 
+	 * remote server connection and waiting for the thread to terminate.
+	 */
 	public void closeDownloadThread() {
 		try {
 			if(server_ != null) {
@@ -95,10 +105,13 @@ public class SocketTask implements Runnable {
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+
 		}
 	}
 	
+	/**
+	 * Close the socket to the client.
+	 */
 	public void closeClient() {
 		if(!client_.isClosed()) {
 			try {

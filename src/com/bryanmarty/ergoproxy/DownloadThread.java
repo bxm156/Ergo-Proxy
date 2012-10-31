@@ -5,6 +5,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
+/**
+ * The Class DownloadThread is responsible for sending the remote servers output
+ * to the client.
+ */
 public class DownloadThread extends Thread {
 
 	HttpRequest request_;
@@ -25,13 +29,15 @@ public class DownloadThread extends Thread {
 			InputStream sis = server_.getInputStream();
 			OutputStream sos = server_.getOutputStream();
 			sos.write(request_.getRequest().getBytes("US-ASCII"));
-			System.out.println(request_.getRequest());
+			System.out.println(request_.getRequest()); //Debugging output
 			sos.flush();
 			while(( d = sis.read(buffer,0,buffer.length)) != -1) {
+				//Transfer the data and flush it to the client
 				client_.write(buffer, 0, d);
 				client_.flush();
 			}
 		} catch(IOException e) {
+			//The SocketTask closes the server socket when the client issues a new HTTP request
 		}
 	}
 }

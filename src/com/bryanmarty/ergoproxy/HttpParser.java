@@ -16,16 +16,18 @@ public class HttpParser {
 		Matcher m = pGetVersion.matcher(info);
 		if(m.find()) {
 			try{
+				//Try and get the relative url
 				String file = m.group(2).trim();
 				URL url = new URL(file);
 				info = m.replaceFirst(m.group(1).trim() + " " + url.getFile() + " HTTP/" + m.group(3));
 			} catch (MalformedURLException mue) {
-				
+				// We will use the original request
 			}
 		}
 		
 		m = pHost.matcher(info);
 		if(m.find()) {
+			//Try and handle if the Host field contains a port number
 			String host = m.group(1).trim();
 			String[] pieces = host.split(":");
 			if(pieces.length == 1) {

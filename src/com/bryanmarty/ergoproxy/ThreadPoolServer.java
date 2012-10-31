@@ -16,13 +16,24 @@ public class ThreadPoolServer {
 	private ThreadPoolExecutor workerPool_;
 	Thread serverHandler_;
 	
+	/**
+	 * Instantiates a new thread pool server.
+	 *
+	 * @param port the port
+	 */
 	public ThreadPoolServer(int port) {
 		port_ = port;
 		blockingQueue_ = new LinkedBlockingQueue<Runnable>();
 		workerPool_ = new ThreadPoolExecutor(5, 100, 1, TimeUnit.MINUTES, blockingQueue_);
 	}
 	
-	public synchronized void start() {
+	
+	
+/**
+ * Starts the server. Opens a Server Socket and listens for connections. Each connection is given to a Socket
+ * Task, which handles the requests.
+ */
+public synchronized void start() {
 		
 		serverHandler_ = new Thread(new Runnable() {
 
@@ -45,12 +56,14 @@ public class ThreadPoolServer {
 						}
 						Socket mySocket = null;
 						try {
+							//Accept new connections
 							mySocket = myServer_.accept();
 						} catch (SocketException e) {
 							continue;
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
+						//For each client, place it into a seperate thread in our worker pool.
 						SocketTask task = new SocketTask(mySocket);
 						workerPool_.execute(task);
 					}
@@ -59,6 +72,9 @@ public class ThreadPoolServer {
 		serverHandler_.start();
 	}
 	
+	/**
+	 * Stops the server that accepts connections.
+	 */
 	public synchronized void stop() {
 		System.out.println("Stopping Server Thread..");
 		try {

@@ -8,6 +8,7 @@ public class ErgoProxy {
 		
 		final ThreadPoolServer server = new ThreadPoolServer(LISTEN_PORT);
 		
+		//If the program ends, try and shut the server down.
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 
 			@Override
@@ -18,6 +19,7 @@ public class ErgoProxy {
 			
 		}));
 
+		//Start the server to listen for connections.
 		server.start();
 		
 	}

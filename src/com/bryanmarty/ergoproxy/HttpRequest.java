@@ -1,5 +1,8 @@
 package com.bryanmarty.ergoproxy;
 
+/**
+ * The Class HttpRequest stores the HTTP request from the client and a few extra fields.
+ */
 public class HttpRequest {
 	private String host;
 	private int port = 80;
