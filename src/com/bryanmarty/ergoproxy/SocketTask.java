@@ -52,11 +52,13 @@ public class SocketTask implements Runnable {
 						bufferData.append(line + NEW_LINE);
 					}
 				} catch (SocketTimeoutException e) {
-					if(!client_.isConnected() || client_.isOutputShutdown()) {
+					if(!client_.isConnected() || client_.isOutputShutdown() || !download_.isAlive()) {
+					
 						break;
-					} else {
-						continue;
+						
 					}
+					continue;
+					
 				}
 				
 				if(line == null) {
@@ -86,6 +88,7 @@ public class SocketTask implements Runnable {
 				
 				//Connect to the server
 				server_ = new Socket(hostIP,request.getPort());
+				server_.setSoTimeout(5000);
 				if(server_.isConnected()) {
 					//Start the thread to transfer data to the client
 					download_ = new DownloadThread(cos,server_,request);
