@@ -19,7 +19,7 @@ public class HttpParser {
 				//Try and get the relative url
 				String file = m.group(2).trim();
 				URL url = new URL(file);
-				info = m.replaceFirst(m.group(1).trim() + " " + url.getFile() + " HTTP/" + m.group(3));
+				info = m.replaceFirst(Matcher.quoteReplacement(m.group(1).trim() + " " + url.getFile() + " HTTP/" + m.group(3)));
 			} catch (MalformedURLException mue) {
 				// We will use the original request
 			}
