@@ -2,7 +2,7 @@ package com.bryanmarty.ergoproxy;
 
 public class ErgoProxy {
 
-	private static final int LISTEN_PORT = 8080;
+	private static final int LISTEN_PORT = 5511;
 
 	public static void main(String[] args) {
 		

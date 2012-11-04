@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 public class SocketTask implements Runnable {
 
@@ -36,17 +37,26 @@ public class SocketTask implements Runnable {
 			return;
 		}
 		try {
+			StringBuffer bufferData = new StringBuffer();
 			while(client_.isConnected()) {
 				String line = null;
-				StringBuffer bufferData = new StringBuffer();
+				client_.setSoTimeout(100);
 				//Read HTTP Requests
-				while((line = clientInput.readLine()) != null) {
-					if(line.isEmpty() && bufferData.length() > 0) {
-						//We have read an entire request terminated by a empty line.
-						bufferData.append(NEW_LINE);
-						break;
+				try {
+					while((line = clientInput.readLine()) != null) {
+						if(line.isEmpty() && bufferData.length() > 0) {
+							//We have read an entire request terminated by a empty line.
+							bufferData.append(NEW_LINE);
+							break;
+						}
+						bufferData.append(line + NEW_LINE);
 					}
-					bufferData.append(line + NEW_LINE);
+				} catch (SocketTimeoutException e) {
+					if(!client_.isConnected() || client_.isOutputShutdown()) {
+						break;
+					} else {
+						continue;
+					}
 				}
 				
 				if(line == null) {
@@ -55,6 +65,7 @@ public class SocketTask implements Runnable {
 				}
 				
 				String data = bufferData.toString();
+				bufferData.setLength(0);
 				if(data.isEmpty()) {
 					continue;
 				}
